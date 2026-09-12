@@ -15,6 +15,7 @@ const priorities = {
 };
 
 let state = loadState();
+let notice = null;
 const app = document.querySelector("#app");
 
 function loadState() {
@@ -74,6 +75,16 @@ function render() {
             <label>备注<textarea name="note" placeholder="师傅电话、材料或注意事项"></textarea></label>
             <button class="primary" type="submit">保存事项</button>
           </form>
+
+          <div class="backup">
+            <h2>数据备份</h2>
+            <div class="backup-actions">
+              <button class="ghost" type="button" id="export-btn">导出全部事项</button>
+              <button class="ghost" type="button" id="import-btn">选择文件导入</button>
+            </div>
+            <input id="import-file" type="file" accept="application/json,.json" hidden>
+            ${notice ? `<p class="backup-message ${notice.type}" role="status">${escapeHtml(notice.text)}</p>` : ""}
+          </div>
         </aside>
 
         <section>
@@ -142,6 +153,7 @@ function bindEvents() {
       photo: data.photo.trim(),
       note: data.note.trim()
     });
+    notice = null;
     saveState();
     render();
   });
@@ -149,6 +161,7 @@ function bindEvents() {
   document.querySelectorAll("[data-filter]").forEach((button) => {
     button.addEventListener("click", () => {
       state.filter = button.dataset.filter;
+      notice = null;
       saveState();
       render();
     });
@@ -158,6 +171,7 @@ function bindEvents() {
     select.addEventListener("change", () => {
       const repair = state.repairs.find((item) => item.id === select.dataset.status);
       repair.status = select.value;
+      notice = null;
       saveState();
       render();
     });
@@ -166,10 +180,91 @@ function bindEvents() {
   document.querySelectorAll("[data-delete]").forEach((button) => {
     button.addEventListener("click", () => {
       state.repairs = state.repairs.filter((repair) => repair.id !== button.dataset.delete);
+      notice = null;
       saveState();
       render();
     });
   });
+
+  document.querySelector("#export-btn").addEventListener("click", exportBackup);
+
+  const fileInput = document.querySelector("#import-file");
+  document.querySelector("#import-btn").addEventListener("click", () => fileInput.click());
+  fileInput.addEventListener("change", () => {
+    const file = fileInput.files[0];
+    if (file) importBackup(file);
+    fileInput.value = "";
+  });
+}
+
+function exportBackup() {
+  const payload = {
+    app: "zfl-14-home-repair",
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    repairs: state.repairs
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `home-repairs-backup-${new Date().toISOString().slice(0, 10)}.json`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+  notice = { type: "ok", text: `已导出 ${state.repairs.length} 条事项到本地文件` };
+  render();
+}
+
+async function importBackup(file) {
+  try {
+    const text = await file.text();
+    const repairs = parseBackup(text);
+    state.repairs = repairs;
+    notice = { type: "ok", text: `导入成功，已恢复 ${repairs.length} 条事项` };
+    saveState();
+  } catch (error) {
+    notice = { type: "error", text: `导入失败：${error.message}，已保留原有数据` };
+  }
+  render();
+}
+
+function parseBackup(text) {
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    throw new Error("文件不是有效的 JSON");
+  }
+  const list = Array.isArray(data) ? data : data && data.repairs;
+  if (!Array.isArray(list)) throw new Error("文件中缺少事项列表");
+  const usedIds = new Set();
+  return list.map((item, index) => normalizeRepair(item, index, usedIds));
+}
+
+function normalizeRepair(item, index, usedIds) {
+  if (!item || typeof item !== "object") throw new Error(`第 ${index + 1} 条事项格式不正确`);
+  const location = String(item.location ?? "").trim();
+  const title = String(item.title ?? "").trim();
+  if (!location || !title) throw new Error(`第 ${index + 1} 条事项缺少位置或问题描述`);
+  if (!priorities[item.priority]) throw new Error(`第 ${index + 1} 条事项优先级无效`);
+  if (!statuses[item.status] || item.status === "all") throw new Error(`第 ${index + 1} 条事项状态无效`);
+  const cost = Number(item.cost || 0);
+  if (!Number.isFinite(cost) || cost < 0) throw new Error(`第 ${index + 1} 条事项费用无效`);
+  let id = typeof item.id === "string" && item.id ? item.id : crypto.randomUUID();
+  if (usedIds.has(id)) id = crypto.randomUUID();
+  usedIds.add(id);
+  return {
+    id,
+    location,
+    title,
+    priority: item.priority,
+    cost,
+    status: item.status,
+    photo: typeof item.photo === "string" ? item.photo : "",
+    note: typeof item.note === "string" ? item.note : ""
+  };
 }
 
 function filteredRepairs() {

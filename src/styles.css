@@ -275,6 +275,43 @@ textarea {
   text-align: center;
 }
 
+.backup {
+  border-top: 1px solid #e3e7e0;
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+  padding-top: 16px;
+}
+
+.backup h2 {
+  font-size: 1rem;
+  margin: 0;
+}
+
+.backup-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.backup-message {
+  border-radius: 6px;
+  font-size: 0.86rem;
+  font-weight: 800;
+  margin: 0;
+  padding: 9px 11px;
+}
+
+.backup-message.ok {
+  background: #d8ead6;
+  color: #376336;
+}
+
+.backup-message.error {
+  background: #eadbd7;
+  color: #783d34;
+}
+
 @media (max-width: 900px) {
   .header,
   .layout {
