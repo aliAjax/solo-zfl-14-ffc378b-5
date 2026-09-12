@@ -395,3 +395,83 @@ textarea {
     padding: 14px;
   }
 }
+
+/* 深色模式：切换 html.dark 后整体变深 */
+html.dark {
+  background: #181b18;
+  color: #e6e8e3;
+}
+
+html.dark .eyebrow {
+  color: #9aa39a;
+}
+
+html.dark .stat,
+html.dark .panel,
+html.dark .repair,
+html.dark .batchbar {
+  background: #242824;
+  border-color: #3a403a;
+}
+
+html.dark .stat span {
+  color: #9aa39a;
+}
+
+html.dark label {
+  color: #a8afa5;
+}
+
+html.dark input,
+html.dark select,
+html.dark textarea {
+  background: #1f231f;
+  border-color: #454b44;
+  color: #e6e8e3;
+}
+
+html.dark .ghost {
+  background: #333a33;
+  color: #a8c9a2;
+}
+
+html.dark .ghost.danger {
+  background: #3d2f2b;
+  color: #d89a8c;
+}
+
+html.dark .seg {
+  background: #333a33;
+  color: #b9c1b4;
+}
+
+html.dark .seg.active {
+  background: #b96f45;
+  color: white;
+}
+
+html.dark .content p {
+  color: #b3bab0;
+}
+
+html.dark .chip {
+  background: #333833;
+  color: #c3c9c0;
+}
+
+html.dark .photo {
+  background: #2e332e;
+  color: #8f978d;
+}
+
+html.dark .empty {
+  color: #8f978d;
+}
+
+html.dark .batch-count {
+  color: #a8afa5;
+}
+
+html.dark .backup {
+  border-top-color: #3a403a;
+}

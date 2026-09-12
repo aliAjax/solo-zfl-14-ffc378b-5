@@ -28,6 +28,7 @@ function loadState() {
   if (saved) return JSON.parse(saved);
   return {
     filter: "all",
+    theme: "light",
     repairs: [
       {
         id: crypto.randomUUID(),
@@ -47,6 +48,10 @@ function saveState() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
+function applyTheme() {
+  document.documentElement.classList.toggle("dark", state.theme === "dark");
+}
+
 function render() {
   const repairs = filteredRepairs();
   const unfinished = state.repairs.filter((repair) => repair.status !== "done");
@@ -60,6 +65,7 @@ function render() {
           <p class="eyebrow">本地家庭维护台</p>
           <h1>家庭维修事项</h1>
         </div>
+        <button class="ghost theme-toggle" type="button" id="theme-toggle">${state.theme === "dark" ? "浅色模式" : "深色模式"}</button>
         <section class="stats">
           <div class="stat"><span>未完成</span><strong>${unfinished.length}</strong></div>
           <div class="stat"><span>处理中</span><strong>${doing}</strong></div>
@@ -155,6 +161,13 @@ function renderPriorityOptions(selected) {
 }
 
 function bindEvents() {
+  document.querySelector("#theme-toggle").addEventListener("click", () => {
+    state.theme = state.theme === "dark" ? "light" : "dark";
+    saveState();
+    applyTheme();
+    render();
+  });
+
   document.querySelector("#repair-form").addEventListener("submit", (event) => {
     event.preventDefault();
     const data = Object.fromEntries(new FormData(event.target));
@@ -357,4 +370,5 @@ function escapeHtml(value) {
   return String(value).replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" })[char]);
 }
 
+applyTheme();
 render();
