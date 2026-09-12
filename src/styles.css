@@ -151,6 +151,48 @@ textarea {
   margin-bottom: 14px;
 }
 
+.batchbar {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #dde1d9;
+  border-radius: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding: 10px 12px;
+}
+
+.batch-count {
+  color: #5c655b;
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.ghost.danger {
+  background: #eadbd7;
+  color: #783d34;
+}
+
+.batch-message {
+  color: #783d34;
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.check {
+  align-items: center;
+  display: flex;
+  flex-direction: row;
+  font-size: 0.86rem;
+  gap: 6px;
+}
+
+.check input {
+  min-height: auto;
+  width: auto;
+}
+
 .seg {
   background: #e9eee6;
   border-radius: 999px;

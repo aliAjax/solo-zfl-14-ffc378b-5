@@ -16,6 +16,9 @@ const priorities = {
 
 let state = loadState();
 let notice = null;
+// 勾选状态仅保存在内存中，刷新页面后自动清空
+let selectedIds = new Set();
+let batchNotice = null;
 const app = document.querySelector("#app");
 
 function loadState() {
@@ -91,6 +94,14 @@ function render() {
           <div class="toolbar">
             ${Object.entries(statuses).map(([value, label]) => `<button class="seg ${state.filter === value ? "active" : ""}" data-filter="${value}">${label}</button>`).join("")}
           </div>
+          <div class="batchbar">
+            <span class="batch-count">已选 ${selectedIds.size} 项</span>
+            <button class="ghost" type="button" data-batch-status="todo">设为待处理</button>
+            <button class="ghost" type="button" data-batch-status="doing">设为处理中</button>
+            <button class="ghost" type="button" data-batch-status="done">设为已完成</button>
+            <button class="ghost danger" type="button" id="batch-delete">删除所选</button>
+            ${batchNotice ? `<span class="batch-message" role="status">${escapeHtml(batchNotice)}</span>` : ""}
+          </div>
           <div class="repairs">
             ${repairs.length ? repairs.map(renderRepair).join("") : `<div class="empty">当前状态下没有维修事项</div>`}
           </div>
@@ -118,6 +129,7 @@ function renderRepair(repair) {
           <span class="chip">${escapeHtml(repair.note || "暂无备注")}</span>
         </div>
         <div class="actions">
+          <label class="check"><input type="checkbox" data-select="${repair.id}" ${selectedIds.has(repair.id) ? "checked" : ""}>选择</label>
           <select data-status="${repair.id}">${renderStatusOptions(repair.status)}</select>
           <button class="ghost" data-delete="${repair.id}">删除</button>
         </div>
@@ -154,6 +166,7 @@ function bindEvents() {
       note: data.note.trim()
     });
     notice = null;
+    batchNotice = null;
     saveState();
     render();
   });
@@ -162,6 +175,7 @@ function bindEvents() {
     button.addEventListener("click", () => {
       state.filter = button.dataset.filter;
       notice = null;
+      batchNotice = null;
       saveState();
       render();
     });
@@ -172,6 +186,7 @@ function bindEvents() {
       const repair = state.repairs.find((item) => item.id === select.dataset.status);
       repair.status = select.value;
       notice = null;
+      batchNotice = null;
       saveState();
       render();
     });
@@ -180,10 +195,52 @@ function bindEvents() {
   document.querySelectorAll("[data-delete]").forEach((button) => {
     button.addEventListener("click", () => {
       state.repairs = state.repairs.filter((repair) => repair.id !== button.dataset.delete);
+      selectedIds.delete(button.dataset.delete);
       notice = null;
+      batchNotice = null;
       saveState();
       render();
     });
+  });
+
+  document.querySelectorAll("[data-select]").forEach((box) => {
+    box.addEventListener("change", () => {
+      if (box.checked) selectedIds.add(box.dataset.select);
+      else selectedIds.delete(box.dataset.select);
+      batchNotice = null;
+      render();
+    });
+  });
+
+  document.querySelectorAll("[data-batch-status]").forEach((button) => {
+    button.addEventListener("click", () => {
+      if (!selectedIds.size) {
+        batchNotice = "请先勾选要操作的事项";
+        render();
+        return;
+      }
+      state.repairs.forEach((repair) => {
+        if (selectedIds.has(repair.id)) repair.status = button.dataset.batchStatus;
+      });
+      selectedIds = new Set();
+      batchNotice = null;
+      saveState();
+      render();
+    });
+  });
+
+  document.querySelector("#batch-delete").addEventListener("click", () => {
+    if (!selectedIds.size) {
+      batchNotice = "请先勾选要操作的事项";
+      render();
+      return;
+    }
+    if (!window.confirm(`确定删除选中的 ${selectedIds.size} 条事项吗？`)) return;
+    state.repairs = state.repairs.filter((repair) => !selectedIds.has(repair.id));
+    selectedIds = new Set();
+    batchNotice = null;
+    saveState();
+    render();
   });
 
   document.querySelector("#export-btn").addEventListener("click", exportBackup);
@@ -222,6 +279,7 @@ async function importBackup(file) {
     const text = await file.text();
     const repairs = parseBackup(text);
     state.repairs = repairs;
+    selectedIds = new Set();
     notice = { type: "ok", text: `导入成功，已恢复 ${repairs.length} 条事项` };
     saveState();
   } catch (error) {
