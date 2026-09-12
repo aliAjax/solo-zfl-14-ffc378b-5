@@ -279,7 +279,10 @@ async function importBackup(file) {
     const text = await file.text();
     const repairs = parseBackup(text);
     state.repairs = repairs;
+    // 恢复后回到全部视图，避免旧筛选把导入内容过滤掉，看起来像导入失败
+    state.filter = "all";
     selectedIds = new Set();
+    batchNotice = null;
     notice = { type: "ok", text: `导入成功，已恢复 ${repairs.length} 条事项` };
     saveState();
   } catch (error) {
