@@ -180,6 +180,22 @@ textarea {
   font-weight: 800;
 }
 
+.undobar {
+  align-items: center;
+  background: #f4deb4;
+  border: 1px solid #e3c98f;
+  border-radius: 8px;
+  color: #694c21;
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 0.9rem;
+  font-weight: 800;
+  gap: 10px;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  padding: 10px 12px;
+}
+
 .check {
   align-items: center;
   display: flex;

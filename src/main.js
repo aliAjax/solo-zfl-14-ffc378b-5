@@ -19,6 +19,8 @@ let notice = null;
 // 勾选状态仅保存在内存中，刷新页面后自动清空
 let selectedIds = new Set();
 let batchNotice = null;
+// 最近一次单个移除的事项（含原位置），仅内存保存，刷新后撤销入口消失
+let lastDeleted = null;
 const app = document.querySelector("#app");
 
 function loadState() {
@@ -102,6 +104,7 @@ function render() {
             <button class="ghost danger" type="button" id="batch-delete">删除所选</button>
             ${batchNotice ? `<span class="batch-message" role="status">${escapeHtml(batchNotice)}</span>` : ""}
           </div>
+          ${lastDeleted ? `<div class="undobar"><span>已删除「${escapeHtml(lastDeleted.repair.location)}」</span><button class="ghost" type="button" id="undo-delete">撤销删除</button></div>` : ""}
           <div class="repairs">
             ${repairs.length ? repairs.map(renderRepair).join("") : `<div class="empty">当前状态下没有维修事项</div>`}
           </div>
@@ -194,7 +197,10 @@ function bindEvents() {
 
   document.querySelectorAll("[data-delete]").forEach((button) => {
     button.addEventListener("click", () => {
-      state.repairs = state.repairs.filter((repair) => repair.id !== button.dataset.delete);
+      const index = state.repairs.findIndex((repair) => repair.id === button.dataset.delete);
+      if (index === -1) return;
+      lastDeleted = { repair: state.repairs[index], index };
+      state.repairs.splice(index, 1);
       selectedIds.delete(button.dataset.delete);
       notice = null;
       batchNotice = null;
@@ -202,6 +208,18 @@ function bindEvents() {
       render();
     });
   });
+
+  const undoButton = document.querySelector("#undo-delete");
+  if (undoButton) {
+    undoButton.addEventListener("click", () => {
+      if (!lastDeleted) return;
+      const index = Math.min(lastDeleted.index, state.repairs.length);
+      state.repairs.splice(index, 0, lastDeleted.repair);
+      lastDeleted = null;
+      saveState();
+      render();
+    });
+  }
 
   document.querySelectorAll("[data-select]").forEach((box) => {
     box.addEventListener("change", () => {
@@ -239,6 +257,7 @@ function bindEvents() {
     state.repairs = state.repairs.filter((repair) => !selectedIds.has(repair.id));
     selectedIds = new Set();
     batchNotice = null;
+    lastDeleted = null;
     saveState();
     render();
   });
@@ -283,6 +302,7 @@ async function importBackup(file) {
     state.filter = "all";
     selectedIds = new Set();
     batchNotice = null;
+    lastDeleted = null;
     notice = { type: "ok", text: `导入成功，已恢复 ${repairs.length} 条事项` };
     saveState();
   } catch (error) {
